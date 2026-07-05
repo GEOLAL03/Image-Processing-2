@@ -1,4 +1,4 @@
-# Thema 3 - Low-light image enhancement
+# Project 3 - Low-light image enhancement
 
 This folder contains the code, input images, organized results, full CSV files, and essential TXT metric summaries.
 
