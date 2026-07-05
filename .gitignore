@@ -1,0 +1,7 @@
+*.asv
+*.mat
+*.docx
+*.pdf
+*.tex
+Thumbs.db
+.DS_Store

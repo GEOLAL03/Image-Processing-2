@@ -1,0 +1,32 @@
+Εικόνα: 493_low.png
+Low-light: 493_low.png
+Reference: 493_high.png
+
+Μέρος Α
+Mean brightness: 0.025165
+Variance: 0.000605
+Std contrast: 0.024601
+Dark pixels: 100.00%
+
+Μέρος Β
+Linear stretch: mean 0.156514, contrast 0.153004
+Gamma correction (gamma = 0.4): mean 0.186383, contrast 0.103090
+Gamma correction (gamma = 0.6): mean 0.092917, contrast 0.065032
+Log transform: mean 0.035391, contrast 0.034165
+
+Μέρος Γ
+Global histogram equalization: mean 0.526091, contrast 0.272674
+Adaptive histogram equalization (NumTiles=[8 8], ClipLimit=0.01): mean 0.126719, contrast 0.094600
+
+Μέρος Δ
+Best denoising row: Salt & Pepper noise / Median filter, PSNR 45.71, MSE 0.000027
+
+Μέρος Ε
+Laplacian sharpening: mean 0.278544, contrast 0.192989
+Unsharp masking (k = 1.0): mean 0.278513, contrast 0.192848
+
+Μέρη ΣΤ-Ζ-Η
+Best pipeline by PSNR: Pipeline 1 - Gamma + stretch
+Best PSNR: 20.34 dB, MSE: 0.009239
+Best Canny edge match: Pipeline 1 - Gamma + stretch, Jaccard 0.3531, Edge density 11.3833
+

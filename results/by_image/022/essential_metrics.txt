@@ -1,0 +1,32 @@
+Εικόνα: 22_low.png
+Low-light: 22_low.png
+Reference: 22_high.png
+
+Μέρος Α
+Mean brightness: 0.075966
+Variance: 0.002582
+Std contrast: 0.050814
+Dark pixels: 100.00%
+
+Μέρος Β
+Linear stretch: mean 0.248351, contrast 0.166122
+Gamma correction (gamma = 0.4): mean 0.323753, contrast 0.125356
+Gamma correction (gamma = 0.6): mean 0.196067, contrast 0.097666
+Log transform: mean 0.103995, contrast 0.068244
+
+Μέρος Γ
+Global histogram equalization: mean 0.513575, contrast 0.288945
+Adaptive histogram equalization (NumTiles=[8 8], ClipLimit=0.01): mean 0.205899, contrast 0.114400
+
+Μέρος Δ
+Best denoising row: Salt & Pepper noise / Median filter, PSNR 42.36, MSE 0.000058
+
+Μέρος Ε
+Laplacian sharpening: mean 0.399141, contrast 0.198130
+Unsharp masking (k = 1.0): mean 0.399133, contrast 0.198086
+
+Μέρη ΣΤ-Ζ-Η
+Best pipeline by PSNR: Pipeline 1 - Gamma + stretch
+Best PSNR: 16.67 dB, MSE: 0.021542
+Best Canny edge match: Pipeline 1 - Gamma + stretch, Jaccard 0.5550, Edge density 8.7458
+

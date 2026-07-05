@@ -1,0 +1,2 @@
+Image,ImageNumber,HighReferenceImage,BestPipeline,PSNRToHigh,MSEToHigh,MeanBrightness,StdContrast,EntropyValue
+179_low.png,179,179_high.png,Pipeline 1 - Gamma + stretch,22.3219093192152,0.00585880533128283,0.283151153618046,0.0731147836180815,6.07496699624206

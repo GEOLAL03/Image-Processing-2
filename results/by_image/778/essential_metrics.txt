@@ -1,0 +1,32 @@
+Εικόνα: 778_low.png
+Low-light: 778_low.png
+Reference: 778_high.png
+
+Μέρος Α
+Mean brightness: 0.030041
+Variance: 0.000902
+Std contrast: 0.030032
+Dark pixels: 99.95%
+
+Μέρος Β
+Linear stretch: mean 0.032878, contrast 0.032868
+Gamma correction (gamma = 0.4): mean 0.201787, contrast 0.109706
+Gamma correction (gamma = 0.6): mean 0.103920, contrast 0.071792
+Log transform: mean 0.042034, contrast 0.040705
+
+Μέρος Γ
+Global histogram equalization: mean 0.524485, contrast 0.274025
+Adaptive histogram equalization (NumTiles=[8 8], ClipLimit=0.01): mean 0.130143, contrast 0.106543
+
+Μέρος Δ
+Best denoising row: Salt & Pepper noise / Median filter, PSNR 37.15, MSE 0.000193
+
+Μέρος Ε
+Laplacian sharpening: mean 0.109829, contrast 0.073601
+Unsharp masking (k = 1.0): mean 0.109799, contrast 0.073315
+
+Μέρη ΣΤ-Ζ-Η
+Best pipeline by PSNR: Pipeline 3 - Retinex sigma 60
+Best PSNR: 12.89 dB, MSE: 0.051449
+Best Canny edge match: Pipeline 1 - Gamma + stretch, Jaccard 0.5596, Edge density 13.8946
+

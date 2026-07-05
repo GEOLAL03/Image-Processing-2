@@ -1,0 +1,2 @@
+Image,ImageNumber,HighReferenceImage,HighReferenceFound,MeanBrightness,IntensityVariance,StdContrast,MinIntensity,MaxIntensity,DarkPixelPercent,BrightPixelPercent,MichelsonContrast,HistogramComment
+79_low.png,79,79_high.png,1,0.0872326975731605,0.00161307258276021,0.0401630748668501,0,1,99.9616666666667,0.00333333333333333,1,"Το ιστόγραμμα είναι συγκεντρωμένο στις χαμηλές στάθμες, άρα η εικόνα είναι έντονα υποφωτισμένη. Η μικρή διασπορά δείχνει χαμηλή αντίθεση. Λίγα pixels βρίσκονται στις υψηλές στάθμες φωτεινότητας."

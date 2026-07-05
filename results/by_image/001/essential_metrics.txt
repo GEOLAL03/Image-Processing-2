@@ -1,0 +1,32 @@
+Εικόνα: 1_low.png
+Low-light: 1_low.png
+Reference: 1_high.png
+
+Μέρος Α
+Mean brightness: 0.096622
+Variance: 0.008346
+Std contrast: 0.091354
+Dark pixels: 87.15%
+
+Μέρος Β
+Linear stretch: mean 0.212402, contrast 0.200822
+Gamma correction (gamma = 0.4): mean 0.346529, contrast 0.145719
+Gamma correction (gamma = 0.6): mean 0.218809, contrast 0.133337
+Log transform: mean 0.127992, contrast 0.115455
+
+Μέρος Γ
+Global histogram equalization: mean 0.511259, contrast 0.284208
+Adaptive histogram equalization (NumTiles=[8 8], ClipLimit=0.01): mean 0.253296, contrast 0.160965
+
+Μέρος Δ
+Best denoising row: Salt & Pepper noise / Median filter, PSNR 40.94, MSE 0.000081
+
+Μέρος Ε
+Laplacian sharpening: mean 0.351027, contrast 0.213741
+Unsharp masking (k = 1.0): mean 0.351025, contrast 0.213754
+
+Μέρη ΣΤ-Ζ-Η
+Best pipeline by PSNR: Pipeline 1 - Gamma + stretch
+Best PSNR: 15.89 dB, MSE: 0.025771
+Best Canny edge match: Pipeline 1 - Gamma + stretch, Jaccard 0.6387, Edge density 10.0062
+

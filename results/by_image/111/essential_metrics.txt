@@ -1,0 +1,32 @@
+Εικόνα: 111_low.png
+Low-light: 111_low.png
+Reference: 111_high.png
+
+Μέρος Α
+Mean brightness: 0.075684
+Variance: 0.001776
+Std contrast: 0.042142
+Dark pixels: 99.66%
+
+Μέρος Β
+Linear stretch: mean 0.126140, contrast 0.070237
+Gamma correction (gamma = 0.4): mean 0.339570, contrast 0.086802
+Gamma correction (gamma = 0.6): mean 0.203439, contrast 0.072564
+Log transform: mean 0.104148, contrast 0.055436
+
+Μέρος Γ
+Global histogram equalization: mean 0.517647, contrast 0.290042
+Adaptive histogram equalization (NumTiles=[8 8], ClipLimit=0.01): mean 0.199360, contrast 0.097621
+
+Μέρος Δ
+Best denoising row: Salt & Pepper noise / Median filter, PSNR 42.11, MSE 0.000062
+
+Μέρος Ε
+Laplacian sharpening: mean 0.276410, contrast 0.098297
+Unsharp masking (k = 1.0): mean 0.276408, contrast 0.098286
+
+Μέρη ΣΤ-Ζ-Η
+Best pipeline by PSNR: Pipeline 3 - Retinex sigma 60
+Best PSNR: 18.82 dB, MSE: 0.013120
+Best Canny edge match: Pipeline 1 - Gamma + stretch, Jaccard 0.5255, Edge density 7.2062
+
