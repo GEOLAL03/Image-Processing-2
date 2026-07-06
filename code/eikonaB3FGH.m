@@ -4,6 +4,7 @@ clc;
 close all;
 
 greekDesktop = char([933 960 959 955 959 947 953 963 964 942 962]);
+% Replace with your path
 projectDir = fullfile(getenv('USERPROFILE'), 'OneDrive', greekDesktop, 'project');
 resultsDir = fullfile(projectDir, 'resultsB3FGH');
 summaryDir = fullfile(resultsDir, 'summary');
@@ -11,6 +12,12 @@ detailsDir = fullfile(resultsDir, 'details');
 metricsDir = fullfile(resultsDir, 'metrics');
 pipelineDetailsDir = fullfile(detailsDir, 'pipeline_images');
 edgeDetailsDir = fullfile(detailsDir, 'edge_maps');
+expectedFolderName = 'resultsB3FGH';
+
+[~, actualFolderName] = fileparts(resultsDir);
+if isempty(resultsDir) || strcmp(resultsDir, projectDir) || ~strcmp(actualFolderName, expectedFolderName)
+    error('Unsafe results folder: %s', resultsDir);
+end
 
 if ~exist(resultsDir, 'dir')
     mkdir(resultsDir);

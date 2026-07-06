@@ -7,8 +7,15 @@ close all;
 rng(1);
 
 greekDesktop = char([933 960 959 955 959 947 953 963 964 942 962]);
+% Replace with your path
 projectDir = fullfile(getenv('USERPROFILE'), 'OneDrive', greekDesktop, 'project');
 resultsDir = fullfile(projectDir, 'resultsB3D');
+expectedFolderName = 'resultsB3D';
+
+[~, actualFolderName] = fileparts(resultsDir);
+if isempty(resultsDir) || strcmp(resultsDir, projectDir) || ~strcmp(actualFolderName, expectedFolderName)
+    error('Unsafe results folder: %s', resultsDir);
+end
 
 if ~exist(resultsDir, 'dir')
     mkdir(resultsDir);
@@ -139,16 +146,7 @@ for idx = 1:numel(imageFiles)
     fprintf(reportFid, '\n');
 
     if saveComparisonFigures
-        hNoise = figure('Name', ['B3D Noisy - ', imageFiles(idx).name], 'Color', 'w', 'Visible', figureVisibility, 'Position', [80 80 1250 650]);
-        add_top_title(hNoise, sprintf('Μέρος Δ - Τεχνητός θόρυβος: %s', imageFiles(idx).name));
-        noiseLayout = tiledlayout(hNoise, 1, 3, 'Padding', 'loose', 'TileSpacing', 'loose');
-        noiseLayout.Units = 'normalized';
-        noiseLayout.Position = [0.05 0.08 0.90 0.82];
-        show_image_tile(inputImage, 'Original low-light');
-        show_image_tile(gaussianNoisy, 'Gaussian noise');
-        show_image_tile(saltPepperNoisy, 'Salt & Pepper noise');
-        save_figure_png(hNoise, fullfile(resultsDir, [outputPrefix, '_noise_comparison.png']));
-        close(hNoise);
+        save_image_grid({inputImage, gaussianNoisy, saltPepperNoisy}, {'Original low-light', 'Gaussian noise', 'Salt & Pepper noise'}, sprintf('Part D - Noise: %s', imageFiles(idx).name), fullfile(resultsDir, [outputPrefix, '_noise_comparison.png']));
 
         make_filter_figure(imageFiles(idx).name, outputPrefix, resultsDir, gaussianNoisy, inputImage, apply_filter(gaussianNoisy, 'Mean filter'), apply_filter(gaussianNoisy, 'Gaussian filter'), apply_filter(gaussianNoisy, 'Median filter'), apply_filter(gaussianNoisy, 'Wiener filter'), 'Gaussian noise', figureVisibility);
         make_filter_figure(imageFiles(idx).name, outputPrefix, resultsDir, saltPepperNoisy, inputImage, apply_filter(saltPepperNoisy, 'Mean filter'), apply_filter(saltPepperNoisy, 'Gaussian filter'), apply_filter(saltPepperNoisy, 'Median filter'), apply_filter(saltPepperNoisy, 'Wiener filter'), 'Salt & Pepper noise', figureVisibility);
@@ -169,18 +167,7 @@ statsTable = struct2table(resultRows);
 writetable(statsTable, fullfile(resultsDir, 'B3D_statistics.csv'));
 
 if saveComparisonFigures
-    hSummary = figure('Name', 'B3D - Summary statistics', 'Color', 'w', 'Visible', figureVisibility, 'Position', [120 120 1350 900]);
-    tiledlayout(hSummary, 2, 1, 'Padding', 'loose', 'TileSpacing', 'compact');
-
-    nexttile;
-    plot_filter_summary(statsTable, 'Gaussian noise');
-
-    nexttile;
-    plot_filter_summary(statsTable, 'Salt & Pepper noise');
-
-    sgtitle('Μέρος Δ - Σύγκριση φίλτρων αποθορυβοποίησης', 'Color', 'k', 'FontSize', 12, 'FontWeight', 'bold');
-    save_figure_png(hSummary, fullfile(resultsDir, 'B3D_summary_statistics.png'));
-    close(hSummary);
+    save_d_summary_image(statsTable, fullfile(resultsDir, 'B3D_summary_statistics.png'));
 end
 
 fprintf('\nΤο Μέρος Δ ολοκληρώθηκε.\n');
@@ -211,7 +198,7 @@ function [imageFiles, imageIds] = find_low_images(projectDir)
 end
 
 function saveComparisonFigures = should_save_comparison_figures()
-    saveComparisonFigures = false;
+    saveComparisonFigures = true;
 end
 
 function [imageDouble, isColorImage] = read_image_as_double(imagePath)
@@ -400,88 +387,185 @@ function textValue = value_or_none(inputText)
     end
 end
 
-function add_top_title(figureHandle, titleText)
-    annotation(figureHandle, 'textbox', [0.02 0.94 0.96 0.045], 'String', titleText, 'Interpreter', 'none', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none', 'Color', 'k', 'FontSize', 12, 'FontWeight', 'bold');
+function make_filter_figure(imageName, outputPrefix, resultsDir, noisyImage, originalImage, meanImage, gaussianImage, medianImage, wienerImage, noiseTitle, ~)
+    imageList = {originalImage, noisyImage, meanImage, gaussianImage, medianImage, wienerImage};
+    titleList = {'Original low-light', noiseTitle, 'Mean filter', 'Gaussian filter', 'Median filter', 'Wiener filter'};
+    save_image_grid(imageList, titleList, sprintf('Part D - Filters: %s - %s', imageName, noiseTitle), fullfile(resultsDir, [outputPrefix, '_filters_', make_safe_filename(noiseTitle), '.png']));
 end
 
-function show_image_tile(inputImage, titleText)
-    nexttile;
-    imshow(inputImage);
-    title(titleText, 'Interpreter', 'none', 'Color', 'k');
-end
-
-function make_filter_figure(imageName, outputPrefix, resultsDir, noisyImage, originalImage, meanImage, gaussianImage, medianImage, wienerImage, noiseTitle, figureVisibility)
-    hFilter = figure('Name', ['B3D Filters - ', imageName, ' - ', noiseTitle], 'Color', 'w', 'Visible', figureVisibility, 'Position', [45 45 1500 870]);
-    add_top_title(hFilter, sprintf('Μέρος Δ - Φίλτρα αποθορυβοποίησης: %s - %s', imageName, noiseTitle));
-    filterLayout = tiledlayout(hFilter, 2, 3, 'Padding', 'loose', 'TileSpacing', 'loose');
-    filterLayout.Units = 'normalized';
-    filterLayout.Position = [0.045 0.055 0.91 0.86];
-    show_image_tile(originalImage, 'Original low-light');
-    show_image_tile(noisyImage, noiseTitle);
-    show_image_tile(meanImage, 'Mean filter');
-    show_image_tile(gaussianImage, 'Gaussian filter');
-    show_image_tile(medianImage, 'Median filter');
-    show_image_tile(wienerImage, 'Wiener filter');
-    save_figure_png(hFilter, fullfile(resultsDir, [outputPrefix, '_filters_', make_safe_filename(noiseTitle), '.png']));
-    close(hFilter);
-end
-
-function make_pipeline_figure(imageName, outputPrefix, resultsDir, idealEnhanced, gaussianNoisy, saltPepperNoisy, figureVisibility)
+function make_pipeline_figure(imageName, outputPrefix, resultsDir, idealEnhanced, gaussianNoisy, saltPepperNoisy, ~)
     gaussianFilter = 'Gaussian filter';
     medianFilter = 'Median filter';
     gaussianDenoiseThenEnhance = enhance_image(apply_filter(gaussianNoisy, gaussianFilter));
     gaussianEnhanceThenDenoise = apply_filter(enhance_image(gaussianNoisy), gaussianFilter);
     saltDenoiseThenEnhance = enhance_image(apply_filter(saltPepperNoisy, medianFilter));
     saltEnhanceThenDenoise = apply_filter(enhance_image(saltPepperNoisy), medianFilter);
-    hPipeline = figure('Name', ['B3D Pipelines - ', imageName], 'Color', 'w', 'Visible', figureVisibility, 'Position', [45 45 1500 870]);
-    add_top_title(hPipeline, sprintf('Μέρος Δ - Σειρές επεξεργασίας: %s', imageName));
-    pipelineLayout = tiledlayout(hPipeline, 2, 3, 'Padding', 'loose', 'TileSpacing', 'loose');
-    pipelineLayout.Units = 'normalized';
-    pipelineLayout.Position = [0.045 0.055 0.91 0.86];
-    show_image_tile(idealEnhanced, 'Clean enhanced reference');
-    show_image_tile(gaussianDenoiseThenEnhance, 'Gaussian: denoise -> enhance');
-    show_image_tile(gaussianEnhanceThenDenoise, 'Gaussian: enhance -> denoise');
-    show_image_tile(idealEnhanced, 'Clean enhanced reference');
-    show_image_tile(saltDenoiseThenEnhance, 'S&P: denoise -> enhance');
-    show_image_tile(saltEnhanceThenDenoise, 'S&P: enhance -> denoise');
-    save_figure_png(hPipeline, fullfile(resultsDir, [outputPrefix, '_pipeline_comparison.png']));
-    close(hPipeline);
+    imageList = {idealEnhanced, gaussianDenoiseThenEnhance, gaussianEnhanceThenDenoise, idealEnhanced, saltDenoiseThenEnhance, saltEnhanceThenDenoise};
+    titleList = {'Clean enhanced', 'Gaussian denoise -> enhance', 'Gaussian enhance -> denoise', 'Clean enhanced', 'S&P denoise -> enhance', 'S&P enhance -> denoise'};
+    save_image_grid(imageList, titleList, sprintf('Part D - Processing order: %s', imageName), fullfile(resultsDir, [outputPrefix, '_pipeline_comparison.png']));
 end
 
-function plot_filter_summary(statsTable, noiseType)
-    rows = strcmp(statsTable.NoiseType, noiseType) & strcmp(statsTable.Stage, 'Denoising');
+function save_d_summary_image(statsTable, outputPath)
+    canvas = ones(900, 1200, 3);
+    if exist('insertText', 'file') == 2
+        canvas = insertText(canvas, [285, 18], 'Part D - Denoising filters summary', 'FontSize', 26, 'BoxOpacity', 0, 'TextColor', 'black');
+    end
     methods = {'Mean filter', 'Gaussian filter', 'Median filter', 'Wiener filter'};
-    hold on;
-    for methodIdx = 1:numel(methods)
-        methodRows = rows & strcmp(statsTable.Method, methods{methodIdx});
-        plot(statsTable.ImageNumber(methodRows), statsTable.PSNR(methodRows), '-o', 'LineWidth', 1.2, 'DisplayName', methods{methodIdx});
-    end
-    hold off;
-    grid on;
-    xlabel('Image number');
-    ylabel('PSNR (dB)');
-    title(noiseType);
-    legend('Location', 'best');
+    canvas = draw_filter_chart(canvas, statsTable, 'Gaussian noise', methods, [45, 85, 1110, 350]);
+    canvas = draw_filter_chart(canvas, statsTable, 'Salt & Pepper noise', methods, [45, 505, 1110, 350]);
+    imwrite(canvas, outputPath);
 end
 
-function save_figure_png(figureHandle, outputPath)
-    set(figureHandle, 'Color', 'w', 'InvertHardcopy', 'off');
-    axesHandles = findall(figureHandle, 'Type', 'axes');
-    for idx = 1:numel(axesHandles)
-        set(axesHandles(idx), 'Color', 'w', 'XColor', 'k', 'YColor', 'k', 'ZColor', 'k');
-        set(get(axesHandles(idx), 'Title'), 'Color', 'k');
-        set(get(axesHandles(idx), 'XLabel'), 'Color', 'k');
-        set(get(axesHandles(idx), 'YLabel'), 'Color', 'k');
-        set(get(axesHandles(idx), 'ZLabel'), 'Color', 'k');
+function canvas = draw_filter_chart(canvas, statsTable, noiseType, methods, rect)
+    xSeries = cell(numel(methods), 1);
+    ySeries = cell(numel(methods), 1);
+    for methodIdx = 1:numel(methods)
+        rows = strcmp(statsTable.NoiseType, noiseType) & strcmp(statsTable.Stage, 'Denoising') & strcmp(statsTable.Method, methods{methodIdx});
+        [xSeries{methodIdx}, sortIdx] = sort(statsTable.ImageNumber(rows));
+        values = statsTable.PSNR(rows);
+        ySeries{methodIdx} = values(sortIdx);
     end
-    textHandles = findall(figureHandle, 'Type', 'text');
-    if ~isempty(textHandles)
-        set(textHandles, 'Color', 'k');
+    canvas = draw_line_chart(canvas, xSeries, ySeries, methods, noiseType, 'PSNR (dB)', rect);
+end
+
+function canvas = draw_line_chart(canvas, xSeries, ySeries, labels, titleText, yLabel, rect)
+    colors = [0.12 0.35 0.75; 0.85 0.33 0.10; 0.15 0.55 0.25; 0.55 0.25 0.70; 0.20 0.20 0.20];
+    panelLeft = rect(1);
+    panelTop = rect(2);
+    panelWidth = rect(3);
+    panelHeight = rect(4);
+    plotLeft = panelLeft + 75;
+    plotTop = panelTop + 55;
+    plotWidth = panelWidth - 150;
+    plotHeight = panelHeight - 115;
+
+    allX = [];
+    allY = [];
+    for idx = 1:numel(ySeries)
+        allX = [allX; xSeries{idx}(:)]; %#ok<AGROW>
+        allY = [allY; ySeries{idx}(:)]; %#ok<AGROW>
     end
-    legendHandles = findall(figureHandle, 'Type', 'legend');
-    if ~isempty(legendHandles)
-        set(legendHandles, 'TextColor', 'k', 'Color', 'w', 'EdgeColor', 'k');
+    allY = allY(isfinite(allY));
+    if isempty(allX) || isempty(allY)
+        return;
     end
-    drawnow;
-    print(figureHandle, outputPath, '-dpng', '-r200');
+    xMin = min(allX);
+    xMax = max(allX);
+    yMin = min(allY);
+    yMax = max(allY);
+    if xMax <= xMin
+        xMax = xMin + 1;
+    end
+    if yMax <= yMin
+        yMax = yMin + 1;
+    end
+    yPad = 0.08 * (yMax - yMin);
+    yMin = yMin - yPad;
+    yMax = yMax + yPad;
+
+    canvas = draw_line(canvas, plotLeft, plotTop + plotHeight, plotLeft + plotWidth, plotTop + plotHeight, [0 0 0], 2);
+    canvas = draw_line(canvas, plotLeft, plotTop, plotLeft, plotTop + plotHeight, [0 0 0], 2);
+    for gridIdx = 1:4
+        yGrid = round(plotTop + plotHeight * gridIdx / 5);
+        canvas = draw_line(canvas, plotLeft, yGrid, plotLeft + plotWidth, yGrid, [0.85 0.85 0.85], 1);
+    end
+
+    for idx = 1:numel(ySeries)
+        xValues = xSeries{idx};
+        yValues = ySeries{idx};
+        valid = isfinite(xValues) & isfinite(yValues);
+        xValues = xValues(valid);
+        yValues = yValues(valid);
+        if isempty(xValues)
+            continue;
+        end
+        xPix = round(plotLeft + (xValues - xMin) / (xMax - xMin) * plotWidth);
+        yPix = round(plotTop + plotHeight - (yValues - yMin) / (yMax - yMin) * plotHeight);
+        colorValue = colors(1 + mod(idx - 1, size(colors, 1)), :);
+        for pointIdx = 1:numel(xPix) - 1
+            canvas = draw_line(canvas, xPix(pointIdx), yPix(pointIdx), xPix(pointIdx + 1), yPix(pointIdx + 1), colorValue, 3);
+        end
+        for pointIdx = 1:numel(xPix)
+            canvas = draw_square(canvas, xPix(pointIdx), yPix(pointIdx), colorValue, 4);
+        end
+    end
+
+    if exist('insertText', 'file') == 2
+        canvas = insertText(canvas, [panelLeft + 10, panelTop + 8], titleText, 'FontSize', 22, 'BoxOpacity', 0, 'TextColor', 'black');
+        canvas = insertText(canvas, [plotLeft, plotTop + plotHeight + 16], 'Image number', 'FontSize', 16, 'BoxOpacity', 0, 'TextColor', 'black');
+        canvas = insertText(canvas, [panelLeft + 10, plotTop + 4], yLabel, 'FontSize', 16, 'BoxOpacity', 0, 'TextColor', 'black');
+        for idx = 1:numel(labels)
+            legendX = panelLeft + panelWidth - 250;
+            legendY = panelTop + 42 + 26 * idx;
+            canvas = draw_line(canvas, legendX, legendY + 9, legendX + 28, legendY + 9, colors(1 + mod(idx - 1, size(colors, 1)), :), 4);
+            canvas = insertText(canvas, [legendX + 35, legendY], labels{idx}, 'FontSize', 15, 'BoxOpacity', 0, 'TextColor', 'black');
+        end
+    end
+end
+
+function save_image_grid(imageList, titleList, mainTitle, outputPath)
+    validIdx = find(~cellfun(@isempty, imageList));
+    if isempty(validIdx)
+        return;
+    end
+    tileHeight = 260;
+    tileWidth = 390;
+    topMargin = 70;
+    labelHeight = 34;
+    gap = 18;
+    cols = min(3, numel(validIdx));
+    rows = ceil(numel(validIdx) / cols);
+    canvasHeight = topMargin + rows * (labelHeight + tileHeight) + (rows + 1) * gap;
+    canvasWidth = cols * tileWidth + (cols + 1) * gap;
+    canvas = ones(canvasHeight, canvasWidth, 3);
+    if exist('insertText', 'file') == 2
+        canvas = insertText(canvas, [round(canvasWidth / 2) - 260, 18], mainTitle, 'FontSize', 24, 'BoxOpacity', 0, 'TextColor', 'black');
+    end
+    for tileIdx = 1:numel(validIdx)
+        imageIdx = validIdx(tileIdx);
+        rowIdx = floor((tileIdx - 1) / cols);
+        colIdx = mod(tileIdx - 1, cols);
+        xStart = gap + colIdx * (tileWidth + gap) + 1;
+        yLabel = topMargin + gap + rowIdx * (labelHeight + tileHeight + gap) + 1;
+        yStart = yLabel + labelHeight;
+        tileImage = prepare_grid_image(imageList{imageIdx}, tileHeight, tileWidth);
+        if exist('insertText', 'file') == 2
+            canvas = insertText(canvas, [xStart + 8, yLabel + 4], titleList{imageIdx}, 'FontSize', 18, 'BoxOpacity', 0, 'TextColor', 'black');
+        end
+        canvas(yStart:yStart + tileHeight - 1, xStart:xStart + tileWidth - 1, :) = tileImage;
+    end
+    imwrite(canvas, outputPath);
+end
+
+function outputImage = prepare_grid_image(inputImage, targetHeight, targetWidth)
+    inputImage = min(max(inputImage, 0), 1);
+    if islogical(inputImage)
+        inputImage = double(inputImage);
+    end
+    if ismatrix(inputImage)
+        inputImage = repmat(inputImage, [1 1 3]);
+    else
+        inputImage = inputImage(:, :, 1:3);
+    end
+    outputImage = imresize(inputImage, [targetHeight targetWidth]);
+end
+
+function canvas = draw_line(canvas, x1, y1, x2, y2, colorValue, thickness)
+    steps = max(abs(x2 - x1), abs(y2 - y1)) + 1;
+    xValues = round(linspace(x1, x2, steps));
+    yValues = round(linspace(y1, y2, steps));
+    for idx = 1:numel(xValues)
+        canvas = draw_square(canvas, xValues(idx), yValues(idx), colorValue, thickness);
+    end
+end
+
+function canvas = draw_square(canvas, xCenter, yCenter, colorValue, radius)
+    [height, width, ~] = size(canvas);
+    xRange = max(1, xCenter - radius):min(width, xCenter + radius);
+    yRange = max(1, yCenter - radius):min(height, yCenter + radius);
+    for channelIdx = 1:3
+        channel = canvas(:, :, channelIdx);
+        channel(yRange, xRange) = colorValue(channelIdx);
+        canvas(:, :, channelIdx) = channel;
+    end
 end

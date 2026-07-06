@@ -5,8 +5,15 @@ close all;
 % Για να αναλυθεί μια εικόνα από το script, το όνομά της πρέπει να τελειώνει σε _low.png.
 
 greekDesktop = char([933 960 959 955 959 947 953 963 964 942 962]);
+% Replace with your path
 projectDir = fullfile(getenv('USERPROFILE'), 'OneDrive', greekDesktop, 'project');
 resultsDir = fullfile(projectDir, 'resultsB3A');
+expectedFolderName = 'resultsB3A';
+
+[~, actualFolderName] = fileparts(resultsDir);
+if isempty(resultsDir) || strcmp(resultsDir, projectDir) || ~strcmp(actualFolderName, expectedFolderName)
+    error('Unsafe results folder: %s', resultsDir);
+end
 
 if ~exist(resultsDir, 'dir')
     mkdir(resultsDir);

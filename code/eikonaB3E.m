@@ -5,8 +5,15 @@ close all;
 % Για να επεξεργαστεί μια εικόνα, το όνομά της πρέπει να τελειώνει σε _low.png.
 
 greekDesktop = char([933 960 959 955 959 947 953 963 964 942 962]);
+% Replace with your path
 projectDir = fullfile(getenv('USERPROFILE'), 'OneDrive', greekDesktop, 'project');
 resultsDir = fullfile(projectDir, 'resultsB3E');
+expectedFolderName = 'resultsB3E';
+
+[~, actualFolderName] = fileparts(resultsDir);
+if isempty(resultsDir) || strcmp(resultsDir, projectDir) || ~strcmp(actualFolderName, expectedFolderName)
+    error('Unsafe results folder: %s', resultsDir);
+end
 
 if ~exist(resultsDir, 'dir')
     mkdir(resultsDir);
@@ -111,19 +118,9 @@ for idx = 1:numel(imageFiles)
     fprintf(reportFid, '\n');
 
     if saveComparisonFigures
-        hComparison = figure('Name', ['B3E - ', imageFiles(idx).name], 'Color', 'w', 'Visible', figureVisibility, 'Position', [45 45 1500 870]);
-        add_top_title(hComparison, sprintf('Μέρος Ε - Όξυνση και ανάδειξη λεπτομερειών: %s', imageFiles(idx).name));
-        comparisonLayout = tiledlayout(hComparison, 2, 3, 'Padding', 'loose', 'TileSpacing', 'loose');
-        comparisonLayout.Units = 'normalized';
-        comparisonLayout.Position = [0.045 0.055 0.91 0.86];
-        show_image_tile(inputImage, 'Original low-light');
-        show_image_tile(baseImage, 'Enhanced + denoised');
-        show_image_tile(laplacianImage, 'Laplacian sharpening');
-        show_image_tile(unsharpImages{1}, 'Unsharp k=0.5');
-        show_image_tile(unsharpImages{2}, 'Unsharp k=1.0');
-        show_image_tile(unsharpImages{3}, 'Unsharp k=1.5');
-        save_figure_png(hComparison, fullfile(resultsDir, [outputPrefix, '_sharpening_comparison.png']));
-        close(hComparison);
+        imageList = {inputImage, baseImage, laplacianImage, unsharpImages{1}, unsharpImages{2}, unsharpImages{3}};
+        titleList = {'Original low-light', 'Enhanced + denoised', 'Laplacian sharpening', 'Unsharp k=0.5', 'Unsharp k=1.0', 'Unsharp k=1.5'};
+        save_image_grid(imageList, titleList, sprintf('Part E - Sharpening: %s', imageFiles(idx).name), fullfile(resultsDir, [outputPrefix, '_sharpening_comparison.png']));
     end
 
     baseStats = compute_image_stats(baseImage, isColorImage);
@@ -139,15 +136,7 @@ statsTable = struct2table(resultRows);
 writetable(statsTable, fullfile(resultsDir, 'B3E_statistics.csv'));
 
 if saveComparisonFigures
-    hSummary = figure('Name', 'B3E - Summary statistics', 'Color', 'w', 'Visible', figureVisibility, 'Position', [120 120 1350 900]);
-    tiledlayout(hSummary, 2, 1, 'Padding', 'loose', 'TileSpacing', 'compact');
-    nexttile;
-    plot_summary_by_method(statsTable, 'GradientMean', 'Gradient mean');
-    nexttile;
-    plot_summary_by_method(statsTable, 'SaturatedPixelPercent', 'Saturated pixels (%)');
-    sgtitle('Μέρος Ε - Σύγκριση μεθόδων όξυνσης', 'Color', 'k', 'FontSize', 12, 'FontWeight', 'bold');
-    save_figure_png(hSummary, fullfile(resultsDir, 'B3E_summary_statistics.png'));
-    close(hSummary);
+    save_e_summary_image(statsTable, fullfile(resultsDir, 'B3E_summary_statistics.png'));
 end
 
 fprintf('\nΤο Μέρος Ε ολοκληρώθηκε.\n');
@@ -178,7 +167,7 @@ function [imageFiles, imageIds] = find_low_images(projectDir)
 end
 
 function saveComparisonFigures = should_save_comparison_figures()
-    saveComparisonFigures = false;
+    saveComparisonFigures = true;
 end
 
 function [imageDouble, isColorImage] = read_image_as_double(imagePath)
@@ -331,55 +320,171 @@ function textValue = value_or_none(inputText)
     end
 end
 
-function add_top_title(figureHandle, titleText)
-    annotation(figureHandle, 'textbox', [0.02 0.94 0.96 0.045], 'String', titleText, 'Interpreter', 'none', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none', 'Color', 'k', 'FontSize', 12, 'FontWeight', 'bold');
-end
-
-function show_image_tile(inputImage, titleText)
-    nexttile;
-    imshow(inputImage);
-    title(titleText, 'Interpreter', 'none', 'Color', 'k');
-end
-
-function plot_summary_by_method(statsTable, metricName, titleText)
+function save_e_summary_image(statsTable, outputPath)
+    canvas = ones(900, 1200, 3);
+    if exist('insertText', 'file') == 2
+        canvas = insertText(canvas, [330, 18], 'Part E - Sharpening summary', 'FontSize', 26, 'BoxOpacity', 0, 'TextColor', 'black');
+    end
     methods = {'Base enhanced denoised', 'Laplacian sharpening', 'Unsharp masking'};
-    hold on;
+    labels = {'Base', 'Laplacian', 'Unsharp k=1.0'};
+    canvas = draw_metric_chart(canvas, statsTable, methods, labels, 'GradientMean', 'Gradient mean', [45, 85, 1110, 350]);
+    canvas = draw_metric_chart(canvas, statsTable, methods, labels, 'SaturatedPixelPercent', 'Saturated pixels (%)', [45, 505, 1110, 350]);
+    imwrite(canvas, outputPath);
+end
+
+function canvas = draw_metric_chart(canvas, statsTable, methods, labels, metricName, titleText, rect)
+    xSeries = cell(numel(methods), 1);
+    ySeries = cell(numel(methods), 1);
     for methodIdx = 1:numel(methods)
         rows = strcmp(statsTable.Method, methods{methodIdx});
         if strcmp(methods{methodIdx}, 'Unsharp masking')
             rows = rows & strcmp(statsTable.Parameter, 'k = 1.0');
-            displayName = 'Unsharp k=1.0';
-        else
-            displayName = methods{methodIdx};
         end
-        plot(statsTable.ImageNumber(rows), statsTable.(metricName)(rows), '-o', 'LineWidth', 1.2, 'DisplayName', displayName);
+        [xSeries{methodIdx}, sortIdx] = sort(statsTable.ImageNumber(rows));
+        values = statsTable.(metricName)(rows);
+        ySeries{methodIdx} = values(sortIdx);
     end
-    hold off;
-    grid on;
-    xlabel('Image number');
-    ylabel(metricName);
-    title(titleText);
-    legend('Location', 'best');
+    canvas = draw_line_chart(canvas, xSeries, ySeries, labels, titleText, metricName, rect);
 end
 
-function save_figure_png(figureHandle, outputPath)
-    set(figureHandle, 'Color', 'w', 'InvertHardcopy', 'off');
-    axesHandles = findall(figureHandle, 'Type', 'axes');
-    for idx = 1:numel(axesHandles)
-        set(axesHandles(idx), 'Color', 'w', 'XColor', 'k', 'YColor', 'k', 'ZColor', 'k');
-        set(get(axesHandles(idx), 'Title'), 'Color', 'k');
-        set(get(axesHandles(idx), 'XLabel'), 'Color', 'k');
-        set(get(axesHandles(idx), 'YLabel'), 'Color', 'k');
-        set(get(axesHandles(idx), 'ZLabel'), 'Color', 'k');
+function canvas = draw_line_chart(canvas, xSeries, ySeries, labels, titleText, yLabel, rect)
+    colors = [0.12 0.35 0.75; 0.85 0.33 0.10; 0.15 0.55 0.25; 0.55 0.25 0.70];
+    panelLeft = rect(1);
+    panelTop = rect(2);
+    panelWidth = rect(3);
+    panelHeight = rect(4);
+    plotLeft = panelLeft + 75;
+    plotTop = panelTop + 55;
+    plotWidth = panelWidth - 150;
+    plotHeight = panelHeight - 115;
+
+    allX = [];
+    allY = [];
+    for idx = 1:numel(ySeries)
+        allX = [allX; xSeries{idx}(:)]; %#ok<AGROW>
+        allY = [allY; ySeries{idx}(:)]; %#ok<AGROW>
     end
-    textHandles = findall(figureHandle, 'Type', 'text');
-    if ~isempty(textHandles)
-        set(textHandles, 'Color', 'k');
+    allY = allY(isfinite(allY));
+    if isempty(allX) || isempty(allY)
+        return;
     end
-    legendHandles = findall(figureHandle, 'Type', 'legend');
-    if ~isempty(legendHandles)
-        set(legendHandles, 'TextColor', 'k', 'Color', 'w', 'EdgeColor', 'k');
+    xMin = min(allX);
+    xMax = max(allX);
+    yMin = min(allY);
+    yMax = max(allY);
+    if xMax <= xMin
+        xMax = xMin + 1;
     end
-    drawnow;
-    print(figureHandle, outputPath, '-dpng', '-r200');
+    if yMax <= yMin
+        yMax = yMin + 1;
+    end
+    yPad = 0.08 * (yMax - yMin);
+    yMin = yMin - yPad;
+    yMax = yMax + yPad;
+
+    canvas = draw_line(canvas, plotLeft, plotTop + plotHeight, plotLeft + plotWidth, plotTop + plotHeight, [0 0 0], 2);
+    canvas = draw_line(canvas, plotLeft, plotTop, plotLeft, plotTop + plotHeight, [0 0 0], 2);
+    for gridIdx = 1:4
+        yGrid = round(plotTop + plotHeight * gridIdx / 5);
+        canvas = draw_line(canvas, plotLeft, yGrid, plotLeft + plotWidth, yGrid, [0.85 0.85 0.85], 1);
+    end
+
+    for idx = 1:numel(ySeries)
+        xValues = xSeries{idx};
+        yValues = ySeries{idx};
+        valid = isfinite(xValues) & isfinite(yValues);
+        xValues = xValues(valid);
+        yValues = yValues(valid);
+        if isempty(xValues)
+            continue;
+        end
+        xPix = round(plotLeft + (xValues - xMin) / (xMax - xMin) * plotWidth);
+        yPix = round(plotTop + plotHeight - (yValues - yMin) / (yMax - yMin) * plotHeight);
+        colorValue = colors(1 + mod(idx - 1, size(colors, 1)), :);
+        for pointIdx = 1:numel(xPix) - 1
+            canvas = draw_line(canvas, xPix(pointIdx), yPix(pointIdx), xPix(pointIdx + 1), yPix(pointIdx + 1), colorValue, 3);
+        end
+        for pointIdx = 1:numel(xPix)
+            canvas = draw_square(canvas, xPix(pointIdx), yPix(pointIdx), colorValue, 4);
+        end
+    end
+
+    if exist('insertText', 'file') == 2
+        canvas = insertText(canvas, [panelLeft + 10, panelTop + 8], titleText, 'FontSize', 22, 'BoxOpacity', 0, 'TextColor', 'black');
+        canvas = insertText(canvas, [plotLeft, plotTop + plotHeight + 16], 'Image number', 'FontSize', 16, 'BoxOpacity', 0, 'TextColor', 'black');
+        canvas = insertText(canvas, [panelLeft + 10, plotTop + 4], yLabel, 'FontSize', 16, 'BoxOpacity', 0, 'TextColor', 'black');
+        for idx = 1:numel(labels)
+            legendX = panelLeft + panelWidth - 230;
+            legendY = panelTop + 42 + 26 * idx;
+            canvas = draw_line(canvas, legendX, legendY + 9, legendX + 28, legendY + 9, colors(1 + mod(idx - 1, size(colors, 1)), :), 4);
+            canvas = insertText(canvas, [legendX + 35, legendY], labels{idx}, 'FontSize', 15, 'BoxOpacity', 0, 'TextColor', 'black');
+        end
+    end
+end
+
+function save_image_grid(imageList, titleList, mainTitle, outputPath)
+    validIdx = find(~cellfun(@isempty, imageList));
+    if isempty(validIdx)
+        return;
+    end
+    tileHeight = 260;
+    tileWidth = 390;
+    topMargin = 70;
+    labelHeight = 34;
+    gap = 18;
+    cols = min(3, numel(validIdx));
+    rows = ceil(numel(validIdx) / cols);
+    canvasHeight = topMargin + rows * (labelHeight + tileHeight) + (rows + 1) * gap;
+    canvasWidth = cols * tileWidth + (cols + 1) * gap;
+    canvas = ones(canvasHeight, canvasWidth, 3);
+    if exist('insertText', 'file') == 2
+        canvas = insertText(canvas, [round(canvasWidth / 2) - 260, 18], mainTitle, 'FontSize', 24, 'BoxOpacity', 0, 'TextColor', 'black');
+    end
+    for tileIdx = 1:numel(validIdx)
+        imageIdx = validIdx(tileIdx);
+        rowIdx = floor((tileIdx - 1) / cols);
+        colIdx = mod(tileIdx - 1, cols);
+        xStart = gap + colIdx * (tileWidth + gap) + 1;
+        yLabel = topMargin + gap + rowIdx * (labelHeight + tileHeight + gap) + 1;
+        yStart = yLabel + labelHeight;
+        tileImage = prepare_grid_image(imageList{imageIdx}, tileHeight, tileWidth);
+        if exist('insertText', 'file') == 2
+            canvas = insertText(canvas, [xStart + 8, yLabel + 4], titleList{imageIdx}, 'FontSize', 18, 'BoxOpacity', 0, 'TextColor', 'black');
+        end
+        canvas(yStart:yStart + tileHeight - 1, xStart:xStart + tileWidth - 1, :) = tileImage;
+    end
+    imwrite(canvas, outputPath);
+end
+
+function outputImage = prepare_grid_image(inputImage, targetHeight, targetWidth)
+    inputImage = min(max(inputImage, 0), 1);
+    if islogical(inputImage)
+        inputImage = double(inputImage);
+    end
+    if ismatrix(inputImage)
+        inputImage = repmat(inputImage, [1 1 3]);
+    else
+        inputImage = inputImage(:, :, 1:3);
+    end
+    outputImage = imresize(inputImage, [targetHeight targetWidth]);
+end
+
+function canvas = draw_line(canvas, x1, y1, x2, y2, colorValue, thickness)
+    steps = max(abs(x2 - x1), abs(y2 - y1)) + 1;
+    xValues = round(linspace(x1, x2, steps));
+    yValues = round(linspace(y1, y2, steps));
+    for idx = 1:numel(xValues)
+        canvas = draw_square(canvas, xValues(idx), yValues(idx), colorValue, thickness);
+    end
+end
+
+function canvas = draw_square(canvas, xCenter, yCenter, colorValue, radius)
+    [height, width, ~] = size(canvas);
+    xRange = max(1, xCenter - radius):min(width, xCenter + radius);
+    yRange = max(1, yCenter - radius):min(height, yCenter + radius);
+    for channelIdx = 1:3
+        channel = canvas(:, :, channelIdx);
+        channel(yRange, xRange) = colorValue(channelIdx);
+        canvas(:, :, channelIdx) = channel;
+    end
 end
