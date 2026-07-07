@@ -1,2 +1,0 @@
-Image,ImageNumber,HighReferenceImage,BestPipeline,PSNRToHigh,MSEToHigh,MeanBrightness,StdContrast,EntropyValue
-778_low.png,778,778_high.png,Pipeline 3 - Retinex sigma 60,12.8862201706675,0.051449123798539,0.496949925033937,0.195349205634567,7.5462830794578
